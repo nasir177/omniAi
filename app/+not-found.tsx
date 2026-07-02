@@ -1,20 +1,27 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+/**
+ * OmniAI — Not Found Screen
+ */
 
-import { Text, View } from '@/components/Themed';
+import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Colors, Typography, Spacing } from '@/src/theme';
+import { Button } from '@/src/components/ui/Button';
 
 export default function NotFoundScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
+  const router = useRouter();
 
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
-        </Link>
-      </View>
-    </>
+  return (
+    <View style={styles.container}>
+      <Text style={styles.emoji}>🔍</Text>
+      <Text style={styles.title}>Page Not Found</Text>
+      <Text style={styles.subtitle}>This screen doesn't exist.</Text>
+      <Button
+        title="Go Home"
+        onPress={() => router.replace('/(tabs)/projects')}
+        variant="primary"
+        style={styles.button}
+      />
+    </View>
   );
 }
 
@@ -23,18 +30,24 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    backgroundColor: Colors.background,
+    padding: Spacing['3xl'],
+  },
+  emoji: {
+    fontSize: 56,
+    marginBottom: Spacing.lg,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...Typography.headlineLarge,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  subtitle: {
+    ...Typography.bodyMedium,
+    color: Colors.textTertiary,
+    marginBottom: Spacing['3xl'],
   },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
+  button: {
+    minWidth: 160,
   },
 });
