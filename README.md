@@ -2,6 +2,8 @@
 
 Welcome to **omniAi**, the next-generation AI-powered mobile application designed to redefine how you edit, create, and share your videos on the go. 
 
+🎥 **Watch the project video here:** [url to this video](https://www.linkedin.com/posts/nasirhussain-_reactnative-mobileappdevelopment-firebase-ugcPost-7478319083986546688-ohDJ/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEK31xoBI5MVxvpjT5mDXpTsKdonpX8FnaI)
+
 With omniAi, tap into powerful machine learning tools to instantly level up your content. Edit clips effortlessly, auto-generate captions, intelligently remove backgrounds, and export in glorious 4K—all beautifully packaged in a sleek, modern UI.
 
 ---
@@ -12,31 +14,33 @@ Here is a glimpse of what omniAi has to offer:
 
 ### 1. Splash Screen
 A beautiful, welcoming entrance.
-![Splash Screen](assets/screenshots/splash_screen_1782956718475.png)
+![Splash Screen](assets/screenshots/omni_ai_dark_splash_exact_1783046243632.png)
 
 ### 2. Authentication
 Seamless and secure sign-in experience.
-![Auth Screen](assets/screenshots/auth_screen_1782956730088.png)
+![Auth Screen](assets/screenshots/authscreenshot.jpeg)
 
-### 3. Projects Dashboard
+### 3. Projects Dashboard/Home Screen
 Manage all your ongoing video edits in a sleek grid layout.
-![Projects](assets/screenshots/projects_screen_1782956739760.png)
+![Projects](assets/screenshots/homescreen.jpeg)
 
 ### 4. Video Editor
 A robust mobile timeline editor with layer support.
-![Editor](assets/screenshots/editor_screen_1782956765246.png)
+![Editor](assets/screenshots/editorscreen.jpeg)
 
 ### 5. AI Magic Features
 Leverage AI for auto-captions, smart cut, and magic remove.
-![AI Features](assets/screenshots/ai_features_screen_1782956786848.png)
+![AI Features](assets/screenshots/aifeature.jpeg)
 
 ### 6. High-Quality Export
 Render and export your masterworks in 4K resolution.
-![Export](assets/screenshots/export_screen_1782956776459.png)
+![Export](assets/screenshots/exportproject.jpeg)
+
+![Export](assets/screenshots/exportscreen.jpeg)
 
 ### 7. User Profile
 Manage your account, settings, and preferences.
-![Profile](assets/screenshots/profile_screen_1782956755389.png)
+![Profile](assets/screenshots/profilescreen.jpeg)
 
 ---
 
