@@ -57,12 +57,17 @@ function SettingsRow({ icon, label, onPress, trailing }: {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut, downgradeToFree } = useAuthStore();
+  const { user, signOut, downgradeToFree, isGuest, skipLogin } = useAuthStore();
   const { projects } = useProjectStore();
 
   const [isPaywallVisible, setPaywallVisible] = useState(false);
   const [isAnalyticsVisible, setAnalyticsVisible] = useState(false);
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
+
+  const handleSignInInstead = () => {
+    // If they were a guest, sign out to reset state and send them to login
+    signOut().then(() => router.replace('/(auth)/login'));
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -140,23 +145,34 @@ export default function ProfileScreen() {
               style={styles.avatar}
             >
               <Text style={styles.avatarText}>
-                {(user?.displayName || 'U')[0].toUpperCase()}
+                {isGuest ? '?' : (user?.displayName || 'U')[0].toUpperCase()}
               </Text>
             </LinearGradient>
           </View>
-          <Text style={styles.userName}>{user?.displayName || 'User'}</Text>
-          <Text style={styles.userEmail}>{user?.email || ''}</Text>
+          <Text style={styles.userName}>{isGuest ? 'Guest User' : (user?.displayName || 'User')}</Text>
+          <Text style={styles.userEmail}>{isGuest ? 'Sign in to sync your projects' : (user?.email || '')}</Text>
 
           {/* Plan Badge */}
-          <TouchableOpacity
-            disabled={!isPro}
-            onPress={handleCancelSubscription}
-            style={[styles.planPill, isPro && styles.planPillPro]}
-          >
-            <Text style={styles.planPillText}>
-              {isPro ? '⭐ Pro Plan (Click to Cancel)' : '🆓 Free Plan'}
-            </Text>
-          </TouchableOpacity>
+          {!isGuest ? (
+            <TouchableOpacity
+              disabled={!isPro}
+              onPress={handleCancelSubscription}
+              style={[styles.planPill, isPro && styles.planPillPro]}
+            >
+              <Text style={styles.planPillText}>
+                {isPro ? '⭐ Pro Plan (Click to Cancel)' : '🆓 Free Plan'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={handleSignInInstead}
+              style={[styles.planPill, styles.planPillPro]}
+            >
+              <Text style={[styles.planPillText, { fontWeight: '700' }]}>
+                Sign In / Sign Up
+              </Text>
+            </TouchableOpacity>
+          )}
         </GlassmorphicCard>
 
         {/* Stats */}
@@ -252,9 +268,9 @@ export default function ProfileScreen() {
         {/* Sign Out */}
         <View style={styles.signOutSection}>
           <Button
-            title="Sign Out"
-            onPress={handleSignOut}
-            variant="outline"
+            title={isGuest ? "Sign In Now" : "Sign Out"}
+            onPress={isGuest ? handleSignInInstead : handleSignOut}
+            variant={isGuest ? "primary" : "outline"}
             fullWidth
             size="md"
           />

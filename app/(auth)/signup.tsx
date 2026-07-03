@@ -11,8 +11,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/src/theme';
@@ -21,9 +25,52 @@ import { Input } from '@/src/components/ui/Input';
 import { useAuthStore } from '@/src/stores/authStore';
 import { APP_NAME } from '@/src/utils/constants';
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function SignUpScreen() {
   const router = useRouter();
-  const { signUp, isLoading } = useAuthStore();
+  const { signUp, signInWithGoogle, skipLogin, isLoading } = useAuthStore();
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 'unconfigured',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'unconfigured',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'unconfigured',
+  });
+
+  React.useEffect(() => {
+    if (!response) return;
+
+    switch (response.type) {
+      case 'success': {
+        const { id_token } = response.params;
+        if (id_token) {
+          signInWithGoogle(id_token)
+            .then(() => router.replace('/(tabs)/projects'))
+            .catch((e: any) =>
+              Alert.alert(
+                'Google Sign-In Failed',
+                e.message || 'Could not complete sign-in. Please try again.'
+              )
+            );
+        }
+        break;
+      }
+      case 'error':
+        Alert.alert(
+          'Authentication Error',
+          'Google sign-in failed. Please check your connection and try again.\n\nIf this keeps happening, sign up with Email/Password instead.',
+          [{ text: 'OK' }]
+        );
+        break;
+      case 'dismiss':
+        console.log('[GoogleAuth] User dismissed the auth flow.');
+        break;
+      case 'cancel':
+        console.log('[GoogleAuth] Auth cancelled by user.');
+        break;
+    }
+  }, [response]);
+
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,7 +103,7 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
         <ScrollView
@@ -67,14 +114,13 @@ export default function SignUpScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <LinearGradient
-                colors={[...Colors.gradientPrimary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoText}>O</Text>
-              </LinearGradient>
+              <View style={styles.logoGradient}>
+                <Image 
+                  source={require('../../assets/images/icon.png')} 
+                  style={{ width: 60, height: 60, borderRadius: 15 }} 
+                  resizeMode="contain" 
+                />
+              </View>
             </View>
             <Text style={styles.title}>Join {APP_NAME}</Text>
             <Text style={styles.subtitle}>Start editing videos with AI</Text>
@@ -94,12 +140,14 @@ export default function SignUpScreen() {
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              autoCapitalize="none"
               error={errors.email}
             />
             <Input
               label="Password"
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
               secureTextEntry
               error={errors.password}
             />
@@ -107,6 +155,7 @@ export default function SignUpScreen() {
               label="Confirm Password"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
+              autoCapitalize="none"
               secureTextEntry
               error={errors.confirmPassword}
             />
@@ -118,6 +167,38 @@ export default function SignUpScreen() {
               fullWidth
               size="lg"
               style={styles.submitButton}
+            />
+
+            {/* Divider */}
+            <View style={[styles.divider, { marginTop: 20 }]}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Sign In */}
+            <Button
+              title="Continue with Google"
+              onPress={() => promptAsync()}
+              variant="outline"
+              fullWidth
+              size="lg"
+              disabled={!request}
+              icon={<Ionicons name="logo-google" size={20} color={Colors.textPrimary} />}
+              style={{ marginTop: 20 }}
+            />
+
+            {/* Skip Button */}
+            <Button
+              title="Skip for now"
+              onPress={() => {
+                skipLogin();
+                router.replace('/(tabs)/projects');
+              }}
+              variant="ghost"
+              fullWidth
+              size="md"
+              style={{ marginTop: Spacing.xl }}
             />
           </View>
 
@@ -188,6 +269,21 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: Spacing.sm,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+  },
+  dividerText: {
+    ...Typography.labelMedium,
+    color: Colors.textTertiary,
+    marginHorizontal: Spacing.lg,
   },
   footer: {
     flexDirection: 'row',

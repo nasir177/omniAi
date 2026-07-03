@@ -1,38 +1,29 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Animated, View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/src/stores/authStore';
-import { Clapperboard, Heart, Rocket, Flame, Music, Sparkles, MessageCircle, ThumbsUp, Scissors, Camera } from 'lucide-react-native';
 
-const ICONS = [
-  { icon: MessageCircle, color: '#38BDF8' },
-  { icon: Heart, color: '#EC4899' },
-  { icon: Rocket, color: '#8B5CF6' },
-  { icon: Flame, color: '#F97316' },
-  { icon: Music, color: '#EC4899' },
-  { icon: Sparkles, color: '#FBBF24' },
-  { icon: MessageCircle, color: '#10B981' },
-  { icon: Heart, color: '#1E293B' },
-  { icon: ThumbsUp, color: '#FBBF24' },
-  { icon: Clapperboard, color: '#1E293B' },
-  { icon: Scissors, color: '#8B5CF6' },
-  { icon: Camera, color: '#334155' },
-];
+const EMOJIS = ['🎬', '✨', '🔥', '🎵', '🚀', '✂️', '📸', '💬', '🌟', '🎥', '🎨', '🎉'];
 const { width } = Dimensions.get('window');
 
 export default function Index() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading, loadSession } = useAuthStore();
   const router = useRouter();
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Make sure session is loaded when splash mounts
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
 
   useEffect(() => {
     // Start rotation animation
     Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
-        duration: 8000,
+        duration: 12000,
         useNativeDriver: true,
       })
     ).start();
@@ -44,7 +35,7 @@ export default function Index() {
       useNativeDriver: false,
     }).start();
 
-    // Navigate after 3 seconds
+    // Wait 3 seconds then navigate — don't block on isLoading (Firebase can be slow)
     const timer = setTimeout(() => {
       if (isAuthenticated) {
         router.replace('/(tabs)/projects');
@@ -54,7 +45,8 @@ export default function Index() {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
+
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -76,19 +68,18 @@ export default function Index() {
       
       <View style={styles.center}>
         <Animated.View style={[styles.circle, { transform: [{ rotate: spin }] }]}>
-          {ICONS.map((item, index) => {
-            const angle = (index * 360) / ICONS.length;
-            const radius = 130;
+          {EMOJIS.map((emoji, index) => {
+            const angle = (index * 360) / EMOJIS.length;
+            const radius = 140;
             const rad = (angle * Math.PI) / 180;
             const x = radius * Math.cos(rad);
             const y = radius * Math.sin(rad);
 
-            // Counter-rotate the icon itself so it stays upright
+            // Counter-rotate the emoji itself so it stays upright
             const counterSpin = rotateAnim.interpolate({
               inputRange: [0, 1],
               outputRange: ['0deg', '-360deg'],
             });
-            const Icon = item.icon;
 
             return (
               <Animated.View
@@ -104,20 +95,20 @@ export default function Index() {
                   },
                 ]}
               >
-                <Icon size={20} color={item.color} />
+                <Text style={styles.emojiText}>{emoji}</Text>
               </Animated.View>
             );
           })}
         </Animated.View>
 
         <View style={styles.logoWrapper}>
-          <LinearGradient
-            colors={['#38BDF8', '#818CF8', '#F472B6']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={styles.logoBox}
-          >
-            <Clapperboard size={56} color="#fff" strokeWidth={2.5} />
-          </LinearGradient>
+          <View style={styles.logoBox}>
+            <Image 
+              source={require('../assets/images/icon.png')} 
+              style={styles.logoImage}
+              resizeMode="contain" 
+            />
+          </View>
           <Text style={styles.logoText}>Omni Ai</Text>
         </View>
       </View>
@@ -142,29 +133,33 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   circle: {
-    width: 260,
-    height: 260,
+    width: 280,
+    height: 280,
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconContainer: {
     position: 'absolute',
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 24,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  emojiText: {
+    fontSize: 24,
   },
   logoWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   logoBox: {
     width: 120,
@@ -172,16 +167,22 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
     shadowColor: '#F472B6',
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 12,
     marginBottom: 24,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   logoText: {
     color: '#1E293B',
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '800',
     letterSpacing: -0.5,
   },

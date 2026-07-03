@@ -12,8 +12,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/src/theme';
@@ -22,9 +26,55 @@ import { Input } from '@/src/components/ui/Input';
 import { useAuthStore } from '@/src/stores/authStore';
 import { APP_NAME, APP_TAGLINE } from '@/src/utils/constants';
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, isLoading } = useAuthStore();
+  const { signIn, signInWithGoogle, skipLogin, devLogin, isLoading } = useAuthStore();
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 'unconfigured',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'unconfigured',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'unconfigured',
+  });
+
+  React.useEffect(() => {
+    if (!response) return;
+
+    switch (response.type) {
+      case 'success': {
+        const { id_token } = response.params;
+        if (id_token) {
+          signInWithGoogle(id_token)
+            .then(() => router.replace('/(tabs)/projects'))
+            .catch((e: any) =>
+              Alert.alert(
+                'Google Sign-In Failed',
+                e.message || 'Could not complete sign-in. Please try again.'
+              )
+            );
+        }
+        break;
+      }
+      case 'error':
+        // OAuth flow failed natively (network error, misconfiguration)
+        Alert.alert(
+          'Authentication Error',
+          'Google sign-in failed. Please check your connection and try again.\n\nIf this keeps happening, use Email/Password login instead.',
+          [{ text: 'OK' }]
+        );
+        break;
+      case 'dismiss':
+        // User closed the browser (may have seen the 400 error page)
+        // Silently log — no alert needed, user chose to dismiss
+        console.log('[GoogleAuth] User dismissed the auth flow.');
+        break;
+      case 'cancel':
+        console.log('[GoogleAuth] Auth cancelled by user.');
+        break;
+    }
+  }, [response]);
+
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +96,7 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       router.replace('/(tabs)/projects');
     } catch (error: any) {
+      console.error("Login Failed:", error.message || error);
       Alert.alert('Sign In Failed', error.message || 'Something went wrong');
     }
   };
@@ -53,7 +104,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
         <ScrollView
@@ -64,14 +115,13 @@ export default function LoginScreen() {
           {/* Header / Branding */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <LinearGradient
-                colors={[...Colors.gradientPrimary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoText}>O</Text>
-              </LinearGradient>
+              <View style={styles.logoGradient}>
+                <Image 
+                  source={require('../../assets/images/icon.png')} 
+                  style={{ width: 72, height: 72, borderRadius: 18 }} 
+                  resizeMode="contain" 
+                />
+              </View>
             </View>
             <Text style={styles.appName}>{APP_NAME}</Text>
             <Text style={styles.tagline}>{APP_TAGLINE}</Text>
@@ -84,12 +134,14 @@ export default function LoginScreen() {
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              autoCapitalize="none"
               error={errors.email}
             />
             <Input
               label="Password"
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
               secureTextEntry
               error={errors.password}
             />
@@ -110,15 +162,50 @@ export default function LoginScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Sign In Placeholder */}
+            {/* Google Sign In */}
             <Button
               title="Continue with Google"
-              onPress={() => Alert.alert('Coming Soon', 'Google Sign-In will be available with Firebase setup.')}
+              onPress={() => promptAsync()}
               variant="outline"
               fullWidth
               size="lg"
-              icon={<Text style={{ fontSize: 18 }}>🔵</Text>}
+              disabled={!request}
+              icon={<Ionicons name="logo-google" size={20} color={Colors.textPrimary} />}
             />
+
+            {/* Skip Button */}
+            <Button
+              title="Skip for now"
+              onPress={() => {
+                skipLogin();
+                router.replace('/(tabs)/projects');
+              }}
+              variant="ghost"
+              fullWidth
+              size="md"
+              style={{ marginTop: Spacing.xl }}
+            />
+
+            {/* ── DEV BYPASS ─────────────────────────────────────── */}
+            <View style={styles.devSection}>
+              <View style={styles.devDivider}>
+                <View style={styles.devLine} />
+                <Text style={styles.devLabel}>🛠️ DEV</Text>
+                <View style={styles.devLine} />
+              </View>
+              <Button
+                title="⚡ Login as Nasir (Pro)"
+                onPress={() => {
+                  devLogin();
+                  router.replace('/(tabs)/projects');
+                }}
+                variant="outline"
+                fullWidth
+                size="md"
+                style={styles.devButton}
+              />
+            </View>
+            {/* ─────────────────────────────────────────────────── */}
           </View>
 
           {/* Footer */}
@@ -214,5 +301,30 @@ const styles = StyleSheet.create({
   footerText: {
     ...Typography.bodyMedium,
     color: Colors.textTertiary,
+  },
+  // ── Dev Bypass Styles ──────────────────────────────────────────
+  devSection: {
+    marginTop: Spacing.xl,
+  },
+  devDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  devLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(239,68,68,0.25)',
+  },
+  devLabel: {
+    ...Typography.caption,
+    color: 'rgba(239,68,68,0.7)',
+    marginHorizontal: Spacing.md,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  devButton: {
+    borderColor: 'rgba(239,68,68,0.4)',
+    borderStyle: 'dashed',
   },
 });

@@ -16,6 +16,7 @@ export const AI_LIMITS = {
   FREE_PROMPTS_PER_DAY: 10,
   BONUS_PROMPTS_PER_AD: 5,
   PRO_PROMPTS_PER_DAY: Infinity,
+  GUEST_PROJECT_LIMIT: 3, // Max projects for guests before prompting sign-up
 };
 
 export const SUBSCRIPTION = {

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
+// @ts-ignore - TS doesn't see this export due to React Native module resolution, but Metro bundler does.
+import { getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 export const FIREBASE_CONFIG = {
@@ -14,16 +16,26 @@ export const FIREBASE_CONFIG = {
 
 // Initialize Firebase only once
 let appInstance;
+let authInstance;
 
 if (getApps().length === 0) {
   appInstance = initializeApp(FIREBASE_CONFIG);
+  
+  if (typeof getReactNativePersistence !== 'undefined') {
+    authInstance = initializeAuth(appInstance, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } else {
+    authInstance = getAuth(appInstance);
+  }
 } else {
   appInstance = getApp();
+  authInstance = getAuth(appInstance);
 }
 
 export const app = appInstance;
 
-export const auth = getAuth(appInstance);
+export const auth = authInstance;
 
 export const db = getFirestore(app);
 
